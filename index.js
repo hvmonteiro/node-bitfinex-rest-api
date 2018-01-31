@@ -567,16 +567,17 @@ class BitFinEx {
      */
     getAllSymbolStats(callback) {
         if (callback) {
+            return false // FIXME: not working  as intended
             this.getAvailableSymbols(symbols => {
                 var allSymbolStats = [];
                 if(symbols) {
-                    symbols.forEach(symbol => { //FIXME
+                    symbols.forEach(symbol => {
 
                         this.getSymbolStats(symbol.toLowerCase(), (res) => {
-                            if (res) allSymbolStats.push(res);
-                            console.log(res);
+                            allSymbolStats.push( symbol = [] );
+                            allSymbolStats.symbol = res;
                         });
-                        //console.log(allSymbolStats);
+                        console.log(allSymbolStats);
                         callback = allSymbolStats;
                     });
                     return this;

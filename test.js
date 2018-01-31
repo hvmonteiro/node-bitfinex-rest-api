@@ -50,7 +50,7 @@ bitfinex.getSymbolStats('btc', symbol => {
   console.log(symbol);
 });
 */
-bitfinex.getAllSymbolStats('btc', symbol => {
+bitfinex.getAllSymbolStats(symbol => {
     console.log('\n\nBitcoin stats (currency: %s): \n', options.convert);
   console.log(symbol);
 });
