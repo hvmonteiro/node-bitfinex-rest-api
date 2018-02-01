@@ -1,8 +1,11 @@
 # bitfinex-api-events
 
-A node module to connect to Bitfinex API and retrieve available symbols, ticker info, order books and stats of available cryptocurrencies
+A node module to connect to Bitfinex API and retrieve available symbols, ticker info, order books and stats of available cryptocurrencies.
+It uses both Bitfinex REST API version 1 and version 2 as both versions return different data.
 
 It supports events to get alerts on several data.
+
+WARNING: Under heavy development. Events are still not working, but everything else is usable.
 
 ## Installation
 
