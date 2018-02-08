@@ -1,4 +1,4 @@
-var BitFinEx = require(".");
+var BitFinex = require(".");
 
 var options = {
     events: false,
@@ -6,7 +6,7 @@ var options = {
     convert: "USD" // Convert price to different currencies. (Default USD)
 };
 
-var bitfinex = new BitFinEx(options);
+var bitfinex = new BitFinex(options);
 
 
 bitfinex.getPlatformStatus(platformStatus => {

@@ -1,52 +1,35 @@
 {
-  "_id": "bitfinex-api-events@0.0.1",
-  "_inBundle": false,
-  "_integrity": "",
-  "_location": "/bitfinex-api-events",
-  "_phantomChildren": {},
-  "_requested": {
-    "type": "version",
-    "registry": true,
-    "raw": "bitfinex-api-events@0.0.1",
-    "name": "bitfinex-api-events",
-    "escapedName": "bitfinex-api-events",
-    "rawSpec": "0.0.1",
-    "saveSpec": null,
-    "fetchSpec": "0.0.1"
-  },
-  "_requiredBy": [
-    "/"
-  ],
-  "_resolved": "https://registry.npmjs.org/bitfinex-api-events/-/bitfinex-api-events-0.0.1.tgz",
-  "_spec": "0.0.1",
-  "name": "bitfinex-api-events",
-  "version": "0.0.1",
-  "license": "MIT",
-  "description": "Node module to retrieve information from Bitfinex",
-  "homepage": "https://github.com/hvmonteiro/bitfinex-api-events#readme",
-  "author": {
-    "name": "Hugo Monteiro"
-  },
+  "name": "node-bitfinex-rest-api",
+  "version": "0.1.0",
+  "description": "A NodeJS module to retrieve data from Bitfinex REST API.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hvmonteiro/node-bitfinex-rest-api.git"
   },
   "keywords": [
     "bitfinex",
     "cryptocurrencies",
     "cryptocoins",
-    "exchange",
-    "trading",
-    "api"
+    "analytics",
+    "api",
+    "rest",
+    "events",
+    "trading"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/hvmonteiro/bitfinex-api-events.git"
-  },
+  "author": "Hugo V. Monteiro",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hvmonteiro/bitfinex-api-events/issues"
+    "url": "https://github.com/hvmonteiro/node-bitfinex-rest-api/issues"
   },
+  "homepage": "https://github.com/hvmonteiro/node-bitfinex-rest-api#readme",
   "dependencies": {
     "request": "^2.81.0"
-  }
+  },
+  "contributors": [
+    {"name":"Alex Caston","url":"hhttps://github.com/Aex12"}
+  ]
 }

@@ -1,11 +1,11 @@
-var BitFinEx = require(".");
+var BitFinex = require(".");
 
 var options = {
 	events: true,
 	refresh: 60, // Refresh time in seconds (Default: 60)
 	convert: "EUR" // Convert price to different currencies. (Default USD)
 };
-var bitfinex = new BitFinEx(options); 
+var bitfinex = new BitFinex(options); 
 
 // Put event for price greater or equal than X
 bitfinex.onGreater("BTC", 4000, (symbol, event) => {

@@ -15,8 +15,8 @@ $ npm install bitfinex-api-events
 
 ## Usage Example
 ```js
-var BitFinEx = require("bitfinex-api-events");
-var bitfinex = new BitFinEx();
+var BitFinex = require("bitfinex-api-events");
+var bitfinex = new BitFinex();
 // If you want to check a single symbol, use getTicker() (You need to supply the bitfinex id of the cryptocurrency, not the symbol)
 // If you want to use symbols instead of id, use multi.
 bitfinex.getTicker("bitsymbol", symbol => {
@@ -33,14 +33,14 @@ bitfinex.multi(symbols => {
 ## Usage Example with Events
 
 ```js
-var BitFinEx = require("bitfinex-api-events");
+var BitFinex = require("bitfinex-api-events");
 
 var options = {
 	events: true, // Enable event system
 	refresh: 60, // Refresh time in seconds (Default: 60)
 	convert: "EUR" // Convert price to different currencies. (Default USD)
 }
-var bitfinex = new BitFinEx(options);
+var bitfinex = new BitFinex(options);
 
 // Trigger this event when BTC price is greater than 4000
 bitfinex.onGreater("BTC", 4000, (symbol) => {

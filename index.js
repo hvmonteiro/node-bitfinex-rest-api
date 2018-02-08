@@ -1,6 +1,6 @@
 var request = require('request');
 
-class BitFinEx {
+class BitFinex {
 
     constructor(options={}){
         this.API_URL = options.API_URL || "https://api.bitfinex.com";
@@ -770,5 +770,5 @@ class BitFinEx {
     }
 }
 
-module.exports = BitFinEx;
+module.exports = BitFinex;
 
