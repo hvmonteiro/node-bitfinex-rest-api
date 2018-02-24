@@ -5,7 +5,7 @@ It uses both Bitfinex REST API version 1 and version 2 as both versions return d
 
 It supports events to get alerts on several data.
 
-WARNING: Under heavy development. Events are still not working, but everything else is usable.
+WARNING: Under development. Events are still not working, but everything else is usable.
 
 ## Installation
 
@@ -31,6 +31,7 @@ bitfinex.multi(symbols => {
 });
 ```
 ## Usage Example with Events
+WARNING: Under development. Events are still not working, but everything else is usable.
 
 ```js
 var BitFinex = require("bitfinex-api-events");
@@ -57,4 +58,6 @@ bitfinex.on("BTC", (symbol) => {
 	console.log(symbol);
 });
 ```
-For a full list of examples with events, visit: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example.js
+For a full list of examples with simple requests, visit: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example1.js
+For a full list of examples with events, visit: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example2.js
+

@@ -27,9 +27,12 @@
   },
   "homepage": "https://github.com/hvmonteiro/node-bitfinex-rest-api#readme",
   "dependencies": {
-    "request": "^2.81.0"
+    "request": "^2.83.0"
   },
   "contributors": [
-    {"name":"Alex Caston","url":"hhttps://github.com/Aex12"}
+    {
+      "name": "Alex Caston",
+      "url": "hhttps://github.com/Aex12"
+    }
   ]
 }

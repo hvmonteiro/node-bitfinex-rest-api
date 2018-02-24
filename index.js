@@ -1,12 +1,19 @@
+'use strict'; // jshint ignore:line
+
+// jshint esversion: 6
+/* globals require: true, __dirname: true, setInterval: true, console: true, module: true */
+
+
 var request = require('request');
 
-class BitFinex {
+class BitFinexAPI {
 
-    constructor(options={}){
+    constructor(options={}) {
         this.API_URL = options.API_URL || "https://api.bitfinex.com";
         this.convert = options.convert || "USD";
-        this.events = options.events || false;
-        if(this.events){
+        //this.events = options.events || false;
+        this.events = false; // FIXME: Events not working yet. Remove this after it's working
+        if (this.events) {
             this.refresh = options.refresh*1000 || 60*1000;
             this.events = [];
             this._emitter();
@@ -16,11 +23,11 @@ class BitFinex {
 
     _getJSON(url, callback) {
         request(this.API_URL+url, (error, response, body) => {
-            if(error){
+            if (error) {
                 callback(false);
                 return this;
             }
-            if(response && response.statusCode == 200){
+            if (response && response.statusCode == 200) {
                 callback(JSON.parse(body));
             } else {
                 callback(false);
@@ -34,75 +41,198 @@ class BitFinex {
             symbols.find(o => o.id === symbol.toLowerCase());
     }
 
-    _emitter(){
-        this.getAvailableSymbols(symbols => {
-            if(!symbols){ return false; } // FIXME
+    _emitter() {
+        /* Working on Events: Still not working!!!
+            var symbolPair = symbol.toUpperCase() + this.convert.toUpperCase();
+            this._getJSON('/v2/ticker/t'+symbolPair, (res) => {
+        */
+        this.getSymbols(symbols => {
+            if (!symbols) { return false; } // FIXME
 
             this.events.filter(e => e.type == "update").forEach(event => {
                 var res = this._find(symbols, event.symbol);
-                if(res){
+                if (res) {
                     event.callback(res, event);
                 }
             });
 
-            this.events.filter(e => e.type == "greater").forEach(event => {
+            this.events.filter(e => e.type == "priceGreater").forEach(event => {
                 var res = this._find(symbols, event.symbol);
-                if(res){
-                    if(res["price_"+this.convert] >= event.price){
+                if (res) {
+                    if (res["price_"+this.convert] >= event.price) {
                         event.callback(res, event);
                     }
                 }
             });
 
-            this.events.filter(e => e.type == "lesser").forEach(event => {
+            this.events.filter(e => e.type == "priceLesser").forEach(event => {
                 var res = this._find(symbols, event.symbol);
-                if(res){
-                    if(res["price_"+this.convert] <= event.price){
+                if (res) {
+                    if (res["price_"+this.convert] <= event.price) {
                         event.callback(res, event);
                     }
                 }
             });
 
-            this.events.filter(e => e.type == "percent1h").forEach(event => {
+            this.events.filter(e => e.type == "pricePercentChange1h").forEach(event => {
                 var res = this._find(symbols, event.symbol);
-                if(res){
-                    if(event.percent < 0 && res.percent_change_1h <= event.percent ){
+                if (res) {
+                    if (event.percent < 0 && res.percent_change_1h <= event.percent ) {
                         event.callback(res, event);
-                    } else if(event.percent > 0 && res.percent_change_1h >= event.percent){
+                    } else if (event.percent > 0 && res.percent_change_1h >= event.percent) {
                         event.callback(res, event);
-                    } else if(event.percent == 0 && res.percent_change_1h == 0){
+                    } else if (event.percent == 0 && res.percent_change_1h == 0) {
                         event.callback(res, event);
                     }
                 }
             });
 
-            this.events.filter(e => e.type == "percent24h").forEach(event => {
+            this.events.filter(e => e.type == "pricePercentChange24h").forEach(event => {
                 var res = this._find(symbols, event.symbol);
-                if(res){
-                    if(event.percent < 0 && res.percent_change_24h <= event.percent ){
+                if (res) {
+                    if (event.percent < 0 && res.percent_change_24h <= event.percent ) {
                         event.callback(res, event);
-                    } else if(event.percent > 0 && res.percent_change_24h >= event.percent){
+                    } else if (event.percent > 0 && res.percent_change_24h >= event.percent) {
                         event.callback(res, event);
-                    } else if(event.percent == 0 && res.percent_change_24h == 0){
+                    } else if (event.percent == 0 && res.percent_change_24h == 0) {
                         event.callback(res, event);
                     }
                 }
             });
 
-            this.events.filter(e => e.type == "percent7d").forEach(event => {
+            this.events.filter(e => e.type == "pricePercentChange7d").forEach(event => {
                 var res = this._find(symbols, event.symbol);
-                if(res){
-                    if(event.percent < 0 && res.percent_change_7d <= event.percent ){
+                if (res) {
+                    if (event.percent < 0 && res.percent_change_7d <= event.percent ) {
                         event.callback(res, event);
-                    } else if(event.percent > 0 && res.percent_change_7d >= event.percent){
+                    } else if (event.percent > 0 && res.percent_change_7d >= event.percent) {
                         event.callback(res, event);
-                    } else if(event.percent == 0 && res.percent_change_7d == 0){
+                    } else if (event.percent == 0 && res.percent_change_7d == 0) {
                         event.callback(res, event);
                     }
                 }
             });
         });
     }
+
+
+    /*
+     * Function: _getTickerArray()
+     *
+     * Description: Accepts a object and returns a array
+     *
+     * params: {
+     *         symbol: 'ELF',
+     *         bid: 0.0015233,
+     *         bidSize: 115210.00662534,
+     *         ask: 0.0015405,
+     *         askSize: 14571.10127627,
+     *         dailyChange: 0.0000491,
+     *         dailyChangePerc: 0.0332,
+     *         lastPrice: 0.0015269,
+     *         volume: 44796.30665487,
+     *         high: 0.0015855,
+     *         low: 0.001458 
+     *        }
+     *
+     * returns: array = [
+     *         'ELF',
+     *         10067,
+     *         59.44536362,
+     *         10069,
+     *         29.15006837,
+     *         -333.08973822,
+     *         -0.032,
+     *         10071,
+     *         65248.68663377,
+     *         10544,
+     *         9760 ]
+     *
+     */
+    _getTickerArray(data = []) {
+
+        if (data.length === -1) return data;
+
+        let {
+            symbol,
+            bid,
+            bidSize,
+            ask,
+            askSize,
+            dailyChange,
+            dailyChangePerc,
+            lastPrice,
+            volume,
+            high,
+            low,
+        } = data;
+
+        return [
+            symbol,
+            bid,
+            bidSize,
+            ask,
+            askSize,
+            dailyChange,
+            dailyChangePerc,
+            lastPrice,
+            volume,
+            high,
+            low
+        ];
+
+    }
+
+    /*
+     * Function: _getTickerObject()
+     *
+     * Description: Accepts an Array and output a object
+     *
+     * params: array = [
+     *         10067,
+     *         59.44536362,
+     *         10069,
+     *         29.15006837,
+     *         -333.08973822,
+     *         -0.032,
+     *         10071,
+     *         65248.68663377,
+     *         10544,
+     *         9760 ]
+     *
+     * returns: {
+     *         symbol: 'tELFETH',
+     *         bid: 0.0015233,
+     *         bidSize: 115210.00662534,
+     *         ask: 0.0015405,
+     *         askSize: 14571.10127627,
+     *         dailyChange: 0.0000491,
+     *         dailyChangePerc: 0.0332,
+     *         lastPrice: 0.0015269,
+     *         volume: 44796.30665487,
+     *         high: 0.0015855,
+     *         low: 0.001458 
+     *        }
+     *
+     */
+    _getTickerObject(data = []) {
+
+        if (data.length === -1) return data;
+        return {
+            'symbol' : data[0],
+            'bid' : data[1],
+            'bidSize' : data[2],
+            'ask' : data[3],
+            'askSize' : data[4],
+            'dailyChange' : data[5],
+            'dailyChangePerc' : data[6],
+            'lastPrice' : data[7],
+            'volume' : data[8],
+            'high' : data[9],
+            'low' : data[10],
+        };
+    }
+
 
 
 
@@ -127,10 +257,17 @@ class BitFinex {
      *         "message": "Unknown symbol"
      *       }
      *
+     * returns:
+     *       { status: 'operative' }
+     *
+     *
      */
-    getPlatformStatus(callback){
-        if(callback){
-            this._getJSON('/v2/platform/status', callback);
+    getPlatformStatus(callback) {
+        if (callback) {
+            this._getJSON('/v2/platform/status', res => {
+                var platformStatus = (res[0] == 1) ? { 'status' : 'operative' } : { 'status' : 'maintenance' };
+                return callback(platformStatus);
+            });
             return this; // (error, response, body)
         } else {
             return false;
@@ -140,7 +277,7 @@ class BitFinex {
 
 
     /*
-     * Function: getAvailableSymbolPairs(callback)
+     * Function: getTradingPairs(callback)
      *
      * Description: Gets a list of symbol pairs on the specified base currency (options.currency)
      *
@@ -164,7 +301,7 @@ class BitFinex {
      *       }
      *
      *
-     * Returns UpperCase: 
+     * Returns: 
      *
      *       [
      *         "BTCUSD",
@@ -176,11 +313,11 @@ class BitFinex {
      *       ]
      *
      */
-    getAvailableSymbolPairs(callback){
-        if(callback){
+    getTradingPairs(callback) {
+        if (callback) {
             this._getJSON('/v1/symbols', (symbolPairs) => {
                 symbolPairs.sort();
-                var res = symbolPairs.map(function(pair){ return pair.toUpperCase(); });
+                var res = symbolPairs.map(function(pair) { return pair.toUpperCase(); });
                 if (res.length > 0) { callback(res); }
             });
             return this;
@@ -192,7 +329,7 @@ class BitFinex {
 
 
     /*
-     * Function: getAvailableSymbols(callback)
+     * Function: getSymbols(callback)
      *
      * Description: Gets a sorted list of all available symbols.
      *
@@ -214,7 +351,7 @@ class BitFinex {
      *       }
      *
      *
-     * Returns UpperCase: 
+     * Returns: 
      *
      *       [
      *         "BTC",
@@ -223,8 +360,8 @@ class BitFinex {
      *         ...
      *       ]
      */
-    getAvailableSymbols(callback){
-        if(callback){
+    getSymbols(callback) {
+        if (callback) {
             var convert = this.convert.toLowerCase();
             this._getJSON('/v1/symbols', (symbols) => {
                 var res = [];
@@ -233,7 +370,7 @@ class BitFinex {
                     if ( pair.endsWith(convert) ) symbolPairs.push(pair.slice(0, pair.indexOf(convert))); // Returns symbol only, removing setup 'options.convert'.
                 });
                 symbolPairs.sort();
-                res = symbolPairs.map(function(pair){ return pair.toUpperCase(); });
+                res = symbolPairs.map(function(pair) { return pair.toUpperCase(); });
                 if (res.length > 0) { callback(res); }
             });
             return this;
@@ -247,7 +384,7 @@ class BitFinex {
     /*
      * Function: getTopSymbols(top, callback)
      *
-     * Description: Gets a sorted list of top <n> available symbols.
+     * Description: Gets a UNSORTED list of top <n> available symbols.
      *
      * params: top = number
      *         callback
@@ -268,8 +405,8 @@ class BitFinex {
      *       }
      *
      */
-    getTopSymbols(limit, callback){
-        if(callback){
+    getTopSymbols(limit, callback) {
+        if (limit && callback) {
             var convert = this.convert.toLowerCase();
             this._getJSON('/v1/symbols', (symbols) => {
                 var res = [];
@@ -277,7 +414,7 @@ class BitFinex {
                 symbols.forEach(function(pair) {
                     if ( pair.endsWith(convert) ) symbolPairs.push(pair.slice(0, pair.indexOf(convert))); // Returns symbol only, removing setup 'options.convert'.
                 });
-                res = symbolPairs.map(function(pair){ return pair.toUpperCase(); });
+                res = symbolPairs.map(function(pair) { return pair.toUpperCase(); });
                 if (res.length > 0) {callback(res.slice(0, limit));}
             });
             return this;
@@ -288,7 +425,6 @@ class BitFinex {
 
 
 
-
     /*
      * Function: getTicker(symbol, callback)
      *
@@ -296,6 +432,8 @@ class BitFinex {
      *             It shows you the current best bid and ask, as well as the last trade price.
      *             It also includes information such as daily volume and how much the price
      *             has moved over the last day.
+     *
+     * Attention: It will use the current set currency in variable 'this.convert'.
      *
      * params: symbol = 'BTC'
      *         callback
@@ -319,12 +457,30 @@ class BitFinex {
      *       {
      *         "message": "Unknown symbol"
      *       }
+     *
+     * Returns:
+     *      {
+     *         symbol: 'tELFETH',
+     *         bid: 0.0015233,
+     *         bidSize: 115210.00662534,
+     *         ask: 0.0015405,
+     *         askSize: 14571.10127627,
+     *         dailyChange: 0.0000491,
+     *         dailyChangePerc: 0.0332,
+     *         lastPrice: 0.0015269,
+     *         volume: 44796.30665487,
+     *         high: 0.0015855,
+     *         low: 0.001458 
+     *      }
+     *
      */
-    getTicker(symbol, callback){
-        if(callback){
-            var symbolPair = symbol.toUpperCase()+this.convert.toUpperCase();
+    getTicker(symbol, callback) {
+        if (symbol && callback) {
+            var symbolPair = symbol.toUpperCase() + this.convert.toUpperCase();
             this._getJSON('/v2/ticker/t'+symbolPair, (res) => {
-                if(res){callback(res);}
+                console.log(res);
+                res.splice(0, 0, symbol.toUpperCase()); // insert symbol at array index [0]
+                if (res) {callback(this._getTickerObject(res));}
             });
             return this;
         } else {
@@ -343,13 +499,15 @@ class BitFinex {
      *             It also includes information such as daily volume and how much the price
      *             has moved over the last day.
      *
+     * Attention: It will use the current set currency in variable 'this.convert'.
+     *
      * params: symbols = 'BTC, ETH, ...'
      *         callback
      *
      * GET: https://api.bitfinex.com/v2/tickers?symbols=tBTCUSD,tETHUSD,...
      *
      * Response: 200 OK
-     * // on trading pairs (ex. tBTCUSD)
+     * // as trading pairs (ex. tBTCUSD)
      *      [ [
      *        SYMBOL,
      *        BID, 
@@ -370,17 +528,42 @@ class BitFinex {
      *       {
      *         "message": "Unknown symbol"
      *       }
+     *
+     * Returns:
+     *      [ {
+     *         symbol: 'ELF',
+     *         bid: 0.0015233,
+     *         bidSize: 115210.00662534,
+     *         ask: 0.0015405,
+     *         askSize: 14571.10127627,
+     *         dailyChange: 0.0000491,
+     *         dailyChangePerc: 0.0332,
+     *         lastPrice: 0.0015269,
+     *         volume: 44796.30665487,
+     *         high: 0.0015855,
+     *         low: 0.001458 
+     *      },{
+     *         symbol: 'ELF',
+     *         bid: 0.0015233,
+     *         ...
+     *      },{
+     *      ...
      */
-    getTickers(symbols, callback){
-        if(symbols && callback){
+    getTickers(symbols, callback) {
+        if (symbols && callback) {
             var allSymbolPairs = [];
             symbols.split(',').forEach(symbol => {
 
-                var symbolPair = symbol.toUpperCase()+this.convert.toUpperCase();
+                var symbolPair = symbol.toUpperCase() + this.convert.toUpperCase();
                 allSymbolPairs.push('t'+symbolPair);
             });
             this._getJSON('/v2/tickers?symbols='+allSymbolPairs.join(','), (res) => {
-                if (res) { callback(res); }
+                var tickers = [];
+                res.forEach( tickerData => {
+                    tickerData[0] = tickerData[0].replace(/^t/ig, '').substring(0, tickerData[0].length - 4).toUpperCase(); // in: 'tBTCUSD' => out: 'BTC'
+                    tickers.push(this._getTickerObject(tickerData));
+                });
+                if (res) { callback(tickers); }
             });
             return this;
         } else {
@@ -397,12 +580,14 @@ class BitFinex {
      *             The ticker is a high level overview of the state of the market.
      *             It shows you the current best bid and ask, as well as the last trade price.
      *             It also includes information such as daily volume and how much the price
+     *
+     * Attention: It will use the current set currency in variable 'this.convert'.
      *             has moved over the last day.
      *
      * params: callback
      *
      * Response: 200 OK
-     * // on trading pairs (ex. tBTCUSD)
+     * // as trading pairs (ex. tBTCUSD)
      *    [ [
      *        SYMBOL,
      *        BID, 
@@ -423,19 +608,45 @@ class BitFinex {
      *       {
      *         "message": "Unknown symbol"
      *       }
+     *
+     * Returns:
+     *      [ {
+     *         symbol: 'ELF',
+     *         bid: 0.0015233,
+     *         bidSize: 115210.00662534,
+     *         ask: 0.0015405,
+     *         askSize: 14571.10127627,
+     *         dailyChange: 0.0000491,
+     *         dailyChangePerc: 0.0332,
+     *         lastPrice: 0.0015269,
+     *         volume: 44796.30665487,
+     *         high: 0.0015855,
+     *         low: 0.001458 
+     *      },{
+     *         symbol: 'ELF',
+     *         bid: 0.0015233,
+     *         ...
+     *      },{
+     *      ...
+     *      } ]
      */
     getAllTickers(callback) {
         if (callback) {
-            this.getAvailableSymbols(symbols => {
-                if(symbols && callback) {
+            this.getSymbols(symbols => {
+                if (symbols && callback) {
                     var allSymbolPairs = [];
                     symbols.forEach(symbol => {
 
-                        var symbolPair = symbol.toUpperCase()+this.convert.toUpperCase();
+                        var symbolPair = symbol.toUpperCase() + this.convert.toUpperCase();
                         allSymbolPairs.push('t'+symbolPair);
                     });
                     this._getJSON('/v2/tickers?symbols='+allSymbolPairs.join(','), (res) => {
-                        if (res) { callback(res); }
+                        var tickers = [];
+                        res.forEach( tickerData => {
+                            tickerData[0] = tickerData[0].replace(/^t/ig, '').toUpperCase(); // in: 'tBTCUSD' => out: 'BTC'
+                            tickers.push(this._getTickerObject(tickerData));
+                        });
+                        if (res) { callback(tickers); }
                     });
                     return this;
                 } else {
@@ -447,7 +658,6 @@ class BitFinex {
             return false;
         }
     }
-
 
 
     /*
@@ -461,34 +671,27 @@ class BitFinex {
      * GET: https://api.bitfinex.com/v1/trades/<symbol>
      *
      * Response: 200 OK
-     *      [{
-     *        "timestamp":1444266681,
-     *        "tid":11988919,
-     *        "price":"244.8",
-     *        "amount":"0.03297384",
-     *        "exchange":"bitfinex",
-     *        "type":"sell"
-     *      }, {
-     *      ...
-     *      }]
+     *       [ { period: 1, volume: '54275.55265163' },
+     *       { period: 7, volume: '444550.89986689' },
+     *       { period: 30, volume: '2016074.12541456' } ]
      *
      * Response: 400 Bad Request
      *      {
      *        "message": "Unknown symbol"
      *      }
+     *
      */
-    getSymbolRecentTrades(symbol, callback){
-        if(symbol && callback){
-            var symbolPair = symbol.toLowerCase()+this.convert.toLowerCase();
+    getSymbolRecentTrades(symbol, callback) {
+        if (symbol && callback) {
+            var symbolPair = symbol.toLowerCase() + this.convert.toLowerCase();
             this._getJSON(`/v1/trades/${symbolPair}`, (res) => {
-                if(res){callback(res);}
+                if (res) { callback(res); }
             });
             return this;
         } else {
             return false;
         }
     }
-
 
 
     /*
@@ -502,88 +705,30 @@ class BitFinex {
      * GET: https://api.bitfinex.com/v1/stats/<symbol>
      *
      * Response: 200 OK
-     *      [{
-     *        "period":1,
-     *        "volume":"7967.96766158"
-     *      },{
-     *        "period":7,
-     *        "volume":"55938.67260266"
-     *      },{
-     *        "period":30,
-     *        "volume":"275148.09653645"
-     *      }]
+     *      [ { timestamp: 1519493551,
+     *          tid: 202303833,
+     *          price: '9664.3',
+     *          amount: '1.5',
+     *          exchange: 'bitfinex',
+     *          type: 'buy' },
+     *        { timestamp: 1519493551,
+     *          tid: 202303832,
+     *          price: '9664.0',
+     *          amount: '0.02',
+     *          exchange: 'bitfinex',
+     *          type: 'buy' } ]
      *
      * Response: 400 Bad Request
      *      {
      *        "message": "Unknown symbol"
      *      }
+     *
      */
     getSymbolStats(symbol, callback) {
-        if(symbol && callback){
-            var symbolPair = symbol.toLowerCase()+this.convert.toLowerCase();
+        if (symbol && callback) {
+            var symbolPair = symbol.toLowerCase() + this.convert.toLowerCase();
             this._getJSON(`/v1/stats/${symbolPair}`, (res) => {
-                if(res){callback(res);}
-            });
-            return this;
-        } else {
-            return false;
-        }
-    }
-
-
-    /*
-     * Function: getAllSymbolStats(callback)
-     *
-     * Description: Get ticker for all available symbols.
-     *             The ticker is a high level overview of the state of the market.
-     *             It shows you the current best bid and ask, as well as the last trade price.
-     *             It also includes information such as daily volume and how much the price
-     *             has moved over the last day.
-     *
-     * params: callback
-     *
-     * Response: 200 OK
-     * // on trading pairs (ex. tBTCUSD)
-     *    [ [
-     *        SYMBOL,
-     *        BID, 
-     *        BID_SIZE, 
-     *        ASK, 
-     *        ASK_SIZE, 
-     *        DAILY_CHANGE, 
-     *        DAILY_CHANGE_PERC, 
-     *        LAST_PRICE, 
-     *        VOLUME, 
-     *        HIGH, 
-     *        LOW
-     *      ],[
-     *       ...
-     *      ] ]
-     *
-     * Response: 400 Bad Request
-     *       {
-     *         "message": "Unknown symbol"
-     *       }
-     */
-    getAllSymbolStats(callback) {
-        if (callback) {
-            return false // FIXME: not working  as intended
-            this.getAvailableSymbols(symbols => {
-                var allSymbolStats = [];
-                if(symbols) {
-                    symbols.forEach(symbol => {
-
-                        this.getSymbolStats(symbol.toLowerCase(), (res) => {
-                            allSymbolStats.push( symbol = [] );
-                            allSymbolStats.symbol = res;
-                        });
-                        console.log(allSymbolStats);
-                        callback = allSymbolStats;
-                    });
-                    return this;
-                } else {
-                    return false;
-                }
+                if (res) { callback(res); }
             });
             return this;
         } else {
@@ -624,11 +769,11 @@ class BitFinex {
      *       }
      *
      */
-    getSymbolOrderBook(symbol, callback){
-        if(symbol && callback){
-            var symbolPair = symbol.toLowerCase()+this.convert.toLowerCase();
+    getSymbolOrderBook(symbol, callback) {
+        if (symbol && callback) {
+            var symbolPair = symbol.toLowerCase() + this.convert.toLowerCase();
             this._getJSON(`/v1/book/${symbolPair}`, (res) => {
-                if(res){callback(res);}
+                if (res) { callback(res); }
             });
             return this;
         } else {
@@ -638,137 +783,136 @@ class BitFinex {
 
 
 
+    /* Events */
 
 
 
-
-
-    on(symbol, callback){
-        if(this.events){
+    on(symbol, callback) {
+        if (this.events) {
             this.events.push({symbol, callback, type: "update"});
         } else {
             return false;
         }
     }
 
-    onPriceGreater(symbol, price, callback){
-        if(this.events){
-            this.events.push({symbol, price, callback, type: "greater"});
+    onPriceGreater(symbol, price, callback) {
+        if (this.events) {
+            this.events.push({symbol, price, callback, type: "priceGreater"});
         } else {
             return false;
         }
     }
 
-    onPriceLesser(symbol, price, callback){
-        if(this.events){
-            this.events.push({symbol, price, callback, type: "lesser"});
+    onPriceLesser(symbol, price, callback) {
+        if (this.events) {
+            this.events.push({symbol, price, callback, type: "priceLesser"});
         } else {
             return false;
         }
     }
 
-    onPricePercentChange(symbol, percent, callback){
-        if(this.events){
-            this.events.push({symbol, percent, callback, type: "pricepercent"});
+    onPricePercentChange(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: "pricePercent"});
         } else {
             return false;
         }
     }
 
-    onPricePercentChange1h(symbol, percent, callback){
-        if(this.events){
-            this.events.push({symbol, percent, callback, type: "pricepercent1h"});
+    onPricePercentChange1h(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: "pricePercentChange1h"});
         } else {
             return false;
         }
     }
 
-    onPricePercentChange24h(symbol, percent, callback){
-        if(this.events){
-            this.events.push({symbol, percent, callback, type: "pricepercent24h"});
+    onPricePercentChange24h(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: "pricePercentChange24h"});
         } else {
             return false;
         }
     }
 
-    onPricePercentChange7d(symbol, percent, callback){
-        if(this.events){
-            this.events.push({symbol, percent, callback, type: "pricepercent7d"});
+    onPricePercentChange7d(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: "pricePercentChange7d"});
         } else {
             return false;
         }
     }
 
-    onVolumeChange(symbol, value, callback){
-        if(this.events){
-            this.events.push({symbol, percent, callback, type: "volumechange"});
+    onVolumeChange(symbol, value, callback) {
+        if (this.events) {
+            this.events.push({symbol, value, callback, type: "volumeChange"});
         } else {
             return false;
         }
     }
 
-    onVolumeChange1h(symbol, percent, callback){
-        if(this.events){
-            this.events.push({symbol, value, callback, type: "volumechange1h"});
+    onVolumeChange1h(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: "volumeChange1h"});
         } else {
             return false;
         }
     }
 
-    onVolumeChange24h(symbol, value, callback){
-        if(this.events){
-            this.events.push({symbol, value, callback, type: "volumechange24h"});
+    onVolumeChange24h(symbol, value, callback) {
+        if (this.events) {
+            this.events.push({symbol, value, callback, type: "volumeChange24h"});
         } else {
             return false;
         }
     }
 
-    onVolumeChange7d(symbol, value, callback){
-        if(this.events){
-            this.events.push({symbol, value, callback, type: "volumechange7d"});
+    onVolumeChange7d(symbol, value, callback) {
+        if (this.events) {
+            this.events.push({symbol, value, callback, type: "volumeChange7d"});
         } else {
             return false;
         }
     }
 
 
-    onVolumePercentChange(symbol, percent, callback){
-        if(this.events){
-            this.events.push({symbol, percent, callback, type: "volumepercent"});
+    onVolumePercentChange(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: "volumePercentChange"});
         } else {
             return false;
         }
     }
 
-    onVolumePercentChange1h(symbol, percent, callback){
-        if(this.events){
-            this.events.push({symbol, percent, callback, type: "volumepercent1h"});
+    onVolumePercentChange1h(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: "volumePercentChange1h"});
         } else {
             return false;
         }
     }
 
-    onVolumePercentChange24h(symbol, percent, callback){
-        if(this.events){
-            this.events.push({symbol, percent, callback, type: "volumepercent24h"});
+    onVolumePercentChange24h(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: "volumePercentChange24h"});
         } else {
             return false;
         }
     }
 
-    onVolumePercentChange7d(symbol, percent, callback){
-        if(this.events){
-            this.events.push({symbol, percent, callback, type: "volumepercent7d"});
+    onVolumePercentChange7d(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: "volumePercentChange7d"});
         } else {
             return false;
         }
     }
 
-    deleteEvent(event){
+    deleteEvent(event) {
         this.events.splice(this.events.indexOf(event), 1);
         return this;
     }
 }
 
-module.exports = BitFinex;
+module.exports = BitFinexAPI;
 
