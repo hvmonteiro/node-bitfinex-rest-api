@@ -9,8 +9,8 @@ var request = require('request');
 class BitFinexAPI {
 
     constructor(options={}) {
-        this.API_URL = options.API_URL || "https://api.bitfinex.com";
-        this.convert = options.convert || "USD";
+        this.API_URL = options.API_URL || 'https://api.bitfinex.com';
+        this.convert = options.convert || 'USD';
         //this.events = options.events || false;
         this.events = false; // FIXME: Events not working yet. Remove this after it's working
         if (this.events) {
@@ -49,32 +49,32 @@ class BitFinexAPI {
         this.getSymbols(symbols => {
             if (!symbols) { return false; } // FIXME
 
-            this.events.filter(e => e.type == "update").forEach(event => {
+            this.events.filter(e => e.type == 'update').forEach(event => {
                 var res = this._find(symbols, event.symbol);
                 if (res) {
                     event.callback(res, event);
                 }
             });
 
-            this.events.filter(e => e.type == "priceGreater").forEach(event => {
+            this.events.filter(e => e.type == 'priceGreater').forEach(event => {
                 var res = this._find(symbols, event.symbol);
                 if (res) {
-                    if (res["price_"+this.convert] >= event.price) {
+                    if (res['price_'+this.convert] >= event.price) {
                         event.callback(res, event);
                     }
                 }
             });
 
-            this.events.filter(e => e.type == "priceLesser").forEach(event => {
+            this.events.filter(e => e.type == 'priceLesser').forEach(event => {
                 var res = this._find(symbols, event.symbol);
                 if (res) {
-                    if (res["price_"+this.convert] <= event.price) {
+                    if (res['price_'+this.convert] <= event.price) {
                         event.callback(res, event);
                     }
                 }
             });
 
-            this.events.filter(e => e.type == "pricePercentChange1h").forEach(event => {
+            this.events.filter(e => e.type == 'pricePercentChange1h').forEach(event => {
                 var res = this._find(symbols, event.symbol);
                 if (res) {
                     if (event.percent < 0 && res.percent_change_1h <= event.percent ) {
@@ -87,7 +87,7 @@ class BitFinexAPI {
                 }
             });
 
-            this.events.filter(e => e.type == "pricePercentChange24h").forEach(event => {
+            this.events.filter(e => e.type == 'pricePercentChange24h').forEach(event => {
                 var res = this._find(symbols, event.symbol);
                 if (res) {
                     if (event.percent < 0 && res.percent_change_24h <= event.percent ) {
@@ -100,7 +100,7 @@ class BitFinexAPI {
                 }
             });
 
-            this.events.filter(e => e.type == "pricePercentChange7d").forEach(event => {
+            this.events.filter(e => e.type == 'pricePercentChange7d').forEach(event => {
                 var res = this._find(symbols, event.symbol);
                 if (res) {
                     if (event.percent < 0 && res.percent_change_7d <= event.percent ) {
@@ -789,7 +789,7 @@ class BitFinexAPI {
 
     on(symbol, callback) {
         if (this.events) {
-            this.events.push({symbol, callback, type: "update"});
+            this.events.push({symbol, callback, type: 'update'});
         } else {
             return false;
         }
@@ -797,7 +797,7 @@ class BitFinexAPI {
 
     onPriceGreater(symbol, price, callback) {
         if (this.events) {
-            this.events.push({symbol, price, callback, type: "priceGreater"});
+            this.events.push({symbol, price, callback, type: 'priceGreater'});
         } else {
             return false;
         }
@@ -805,7 +805,7 @@ class BitFinexAPI {
 
     onPriceLesser(symbol, price, callback) {
         if (this.events) {
-            this.events.push({symbol, price, callback, type: "priceLesser"});
+            this.events.push({symbol, price, callback, type: 'priceLesser'});
         } else {
             return false;
         }
@@ -813,7 +813,7 @@ class BitFinexAPI {
 
     onPricePercentChange(symbol, percent, callback) {
         if (this.events) {
-            this.events.push({symbol, percent, callback, type: "pricePercent"});
+            this.events.push({symbol, percent, callback, type: 'pricePercent'});
         } else {
             return false;
         }
@@ -821,7 +821,7 @@ class BitFinexAPI {
 
     onPricePercentChange1h(symbol, percent, callback) {
         if (this.events) {
-            this.events.push({symbol, percent, callback, type: "pricePercentChange1h"});
+            this.events.push({symbol, percent, callback, type: 'pricePercentChange1h'});
         } else {
             return false;
         }
@@ -829,7 +829,7 @@ class BitFinexAPI {
 
     onPricePercentChange24h(symbol, percent, callback) {
         if (this.events) {
-            this.events.push({symbol, percent, callback, type: "pricePercentChange24h"});
+            this.events.push({symbol, percent, callback, type: 'pricePercentChange24h'});
         } else {
             return false;
         }
@@ -837,7 +837,7 @@ class BitFinexAPI {
 
     onPricePercentChange7d(symbol, percent, callback) {
         if (this.events) {
-            this.events.push({symbol, percent, callback, type: "pricePercentChange7d"});
+            this.events.push({symbol, percent, callback, type: 'pricePercentChange7d'});
         } else {
             return false;
         }
@@ -845,7 +845,7 @@ class BitFinexAPI {
 
     onVolumeChange(symbol, value, callback) {
         if (this.events) {
-            this.events.push({symbol, value, callback, type: "volumeChange"});
+            this.events.push({symbol, value, callback, type: 'volumeChange'});
         } else {
             return false;
         }
@@ -853,7 +853,7 @@ class BitFinexAPI {
 
     onVolumeChange1h(symbol, percent, callback) {
         if (this.events) {
-            this.events.push({symbol, percent, callback, type: "volumeChange1h"});
+            this.events.push({symbol, percent, callback, type: 'volumeChange1h'});
         } else {
             return false;
         }
@@ -861,7 +861,7 @@ class BitFinexAPI {
 
     onVolumeChange24h(symbol, value, callback) {
         if (this.events) {
-            this.events.push({symbol, value, callback, type: "volumeChange24h"});
+            this.events.push({symbol, value, callback, type: 'volumeChange24h'});
         } else {
             return false;
         }
@@ -869,7 +869,7 @@ class BitFinexAPI {
 
     onVolumeChange7d(symbol, value, callback) {
         if (this.events) {
-            this.events.push({symbol, value, callback, type: "volumeChange7d"});
+            this.events.push({symbol, value, callback, type: 'volumeChange7d'});
         } else {
             return false;
         }
@@ -878,7 +878,7 @@ class BitFinexAPI {
 
     onVolumePercentChange(symbol, percent, callback) {
         if (this.events) {
-            this.events.push({symbol, percent, callback, type: "volumePercentChange"});
+            this.events.push({symbol, percent, callback, type: 'volumePercentChange'});
         } else {
             return false;
         }
@@ -886,7 +886,7 @@ class BitFinexAPI {
 
     onVolumePercentChange1h(symbol, percent, callback) {
         if (this.events) {
-            this.events.push({symbol, percent, callback, type: "volumePercentChange1h"});
+            this.events.push({symbol, percent, callback, type: 'volumePercentChange1h'});
         } else {
             return false;
         }
@@ -894,7 +894,7 @@ class BitFinexAPI {
 
     onVolumePercentChange24h(symbol, percent, callback) {
         if (this.events) {
-            this.events.push({symbol, percent, callback, type: "volumePercentChange24h"});
+            this.events.push({symbol, percent, callback, type: 'volumePercentChange24h'});
         } else {
             return false;
         }
@@ -902,7 +902,7 @@ class BitFinexAPI {
 
     onVolumePercentChange7d(symbol, percent, callback) {
         if (this.events) {
-            this.events.push({symbol, percent, callback, type: "volumePercentChange7d"});
+            this.events.push({symbol, percent, callback, type: 'volumePercentChange7d'});
         } else {
             return false;
         }
