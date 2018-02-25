@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/hvmonteiro/node-bitfinex-rest-api#readme",
   "dependencies": {
+    "debug": "^3.1.0",
     "request": "^2.83.0"
   }
 }

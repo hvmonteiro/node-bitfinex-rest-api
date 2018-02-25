@@ -5,20 +5,21 @@
 
 
 var request = require('request');
+const debug = require('debug')('node-bitfinex-rest-api');
 
 class BitFinexAPI {
 
     constructor(options={}) {
         this.API_URL = options.API_URL || 'https://api.bitfinex.com';
-        this.convert = options.convert || 'USD';
-        //this.events = options.events || false;
-        this.events = false; // FIXME: Events not working yet. Remove this after it's working
+        this.currency = options.currency || ''; // If not set, it will fetch all tradingPairs (ex: ETHUSD, ETHEUR, ETHBTC...)
+        this.events = options.events || false;
         if (this.events) {
             this.refresh = options.refresh*1000 || 60*1000;
             this.events = [];
             this._emitter();
             setInterval(this._emitter.bind(this), this.refresh);
         }
+        debug(options);
     }
 
     _getJSON(url, callback) {
@@ -42,40 +43,73 @@ class BitFinexAPI {
     }
 
     _emitter() {
+        var tradingPairs = [];
+        debug(this.events);
+        /*
+         *   [ { symbol: 'BTC',
+         *       price: 4000,
+         *       callback: [Function],
+         *       type: 'priceAbove' } ]
+         */
+        this.events.forEach(_event => {
+            tradingPairs.push(_event.symbol);
+        });
+        debug('Event running...');
         /* Working on Events: Still not working!!!
-            var symbolPair = symbol.toUpperCase() + this.convert.toUpperCase();
-            this._getJSON('/v2/ticker/t'+symbolPair, (res) => {
         */
-        this.getSymbols(symbols => {
-            if (!symbols) { return false; } // FIXME
+        this.getTickers(tradingPairs.join(','), tickersData => {
+            if (!tickersData) { return false; }
 
+            /* working: ok */
             this.events.filter(e => e.type == 'update').forEach(event => {
-                var res = this._find(symbols, event.symbol);
+                var res = this._find(tickersData, event.symbol);
                 if (res) {
                     event.callback(res, event);
                 }
             });
 
-            this.events.filter(e => e.type == 'priceGreater').forEach(event => {
-                var res = this._find(symbols, event.symbol);
+            /* working: ok */
+            this.events.filter(e => e.type == 'priceAbove').forEach(event => {
+                var res = this._find(tickersData, event.symbol);
                 if (res) {
-                    if (res['price_'+this.convert] >= event.price) {
+                    if (res.lastPrice >= event.price) {
                         event.callback(res, event);
                     }
                 }
             });
 
-            this.events.filter(e => e.type == 'priceLesser').forEach(event => {
-                var res = this._find(symbols, event.symbol);
+            /* working: ok */
+            this.events.filter(e => e.type == 'priceBelow').forEach(event => {
+                var res = this._find(tickersData, event.symbol);
                 if (res) {
-                    if (res['price_'+this.convert] <= event.price) {
+                    if (res.lastPrice <= event.price) {
                         event.callback(res, event);
                     }
                 }
             });
 
+            /* working: ok */
+            this.events.filter(e => e.type == 'volumeAbove').forEach(event => {
+                var res = this._find(tickersData, event.symbol);
+                if (res) {
+                    if (res.volume >= event.volume) {
+                        event.callback(res, event);
+                    }
+                }
+            });
+
+            /* working: ok */
+            this.events.filter(e => e.type == 'volumeBelow').forEach(event => {
+                var res = this._find(tickersData, event.symbol);
+                if (res) {
+                    if (res.volume <= event.volume) {
+                        event.callback(res, event);
+                    }
+                }
+            });
+            /* 
             this.events.filter(e => e.type == 'pricePercentChange1h').forEach(event => {
-                var res = this._find(symbols, event.symbol);
+                var res = this._find(tickersData, event.symbol);
                 if (res) {
                     if (event.percent < 0 && res.percent_change_1h <= event.percent ) {
                         event.callback(res, event);
@@ -83,25 +117,43 @@ class BitFinexAPI {
                         event.callback(res, event);
                     } else if (event.percent == 0 && res.percent_change_1h == 0) {
                         event.callback(res, event);
+                    } else {
+                        // store value to monitor
+                        event.percentChange1h = (!event.percentChange1h) ? event.percent : event.percentChange1h;
                     }
                 }
             });
+            */
 
-            this.events.filter(e => e.type == 'pricePercentChange24h').forEach(event => {
-                var res = this._find(symbols, event.symbol);
+            this.events.filter(e => e.type == 'priceChange24h').forEach(event => {
+                var res = this._find(tickersData, event.symbol);
                 if (res) {
-                    if (event.percent < 0 && res.percent_change_24h <= event.percent ) {
+                    if (event.percent < 0 && res.dailyChange <= event.percent ) {
                         event.callback(res, event);
-                    } else if (event.percent > 0 && res.percent_change_24h >= event.percent) {
+                    } else if (event.percent > 0 && res.dailyChange >= event.percent) {
                         event.callback(res, event);
-                    } else if (event.percent == 0 && res.percent_change_24h == 0) {
+                    } else if (event.percent == 0 && res.dailyChange == 0) {
                         event.callback(res, event);
                     }
                 }
             });
-
+        
+            this.events.filter(e => e.type == 'pricePercentChange24h').forEach(event => {
+                var res = this._find(tickersData, event.symbol);
+                if (res) {
+                    if (event.percent < 0 && res.dailyChangePerc <= event.percent ) {
+                        event.callback(res, event);
+                    } else if (event.percent > 0 && res.dailyChangePerc >= event.percent) {
+                        event.callback(res, event);
+                    } else if (event.percent == 0 && res.dailyChangePerc == 0) {
+                        event.callback(res, event);
+                    }
+                }
+            });
+        
+            /* 
             this.events.filter(e => e.type == 'pricePercentChange7d').forEach(event => {
-                var res = this._find(symbols, event.symbol);
+                var res = this._find(tickersData, event.symbol);
                 if (res) {
                     if (event.percent < 0 && res.percent_change_7d <= event.percent ) {
                         event.callback(res, event);
@@ -112,12 +164,12 @@ class BitFinexAPI {
                     }
                 }
             });
+            */
         });
     }
 
-
     /*
-     * Function: _getTickerArray()
+     * Function: _currencyObjectToArray()
      *
      * Description: Accepts a object and returns a array
      *
@@ -149,7 +201,7 @@ class BitFinexAPI {
      *         9760 ]
      *
      */
-    _getTickerArray(data = []) {
+    _currencyObjectToArray(data = []) {
 
         if (data.length === -1) return data;
 
@@ -184,7 +236,7 @@ class BitFinexAPI {
     }
 
     /*
-     * Function: _getTickerObject()
+     * Function: _currencyArrayToObject()
      *
      * Description: Accepts an Array and output a object
      *
@@ -215,7 +267,7 @@ class BitFinexAPI {
      *        }
      *
      */
-    _getTickerObject(data = []) {
+    _currencyArrayToObject(data = []) {
 
         if (data.length === -1) return data;
         return {
@@ -234,6 +286,36 @@ class BitFinexAPI {
     }
 
 
+
+    tradingPairExists(symbolPair, callback)    {
+        if (callback) {
+
+            this.getTradingPairs(data => {
+                data.forEach( tradingPair => {
+                if ( symbolPair.toUpperCase() == tradingPair.toUpperCase() ) 
+                    return callback(true);
+                });
+            });
+            return this; // (error, response, body)
+        } else {
+            return false;
+        }
+    }
+
+    symbolExists(symbol, callback)    {
+        if (callback) {
+
+            this.getSymbols(symbolPairs => {
+                symbolPairs.forEach( _symbol => {
+                if ( symbol.toUpperCase() == _symbol )
+                    return callback(true);
+                });
+            });
+            return this; // (error, response, body)
+        } else {
+            return false;
+        }
+    }
 
 
     /*
@@ -259,6 +341,8 @@ class BitFinexAPI {
      *
      * returns:
      *       { status: 'operative' }
+     *    - or -
+     *       { status: 'maintenance' }
      *
      *
      */
@@ -279,7 +363,7 @@ class BitFinexAPI {
     /*
      * Function: getTradingPairs(callback)
      *
-     * Description: Gets a list of symbol pairs on the specified base currency (options.currency)
+     * Description: Gets a list of symbol pairs. Attention: ignores specified base currency (options.currency).
      *
      * params: callback
      *
@@ -316,9 +400,11 @@ class BitFinexAPI {
     getTradingPairs(callback) {
         if (callback) {
             this._getJSON('/v1/symbols', (symbolPairs) => {
-                symbolPairs.sort();
-                var res = symbolPairs.map(function(pair) { return pair.toUpperCase(); });
-                if (res.length > 0) { callback(res); }
+                if (symbolPairs) {
+                    symbolPairs.sort();
+                    var res = symbolPairs.map(function(pair) { return pair.toUpperCase(); });
+                    if (res.length > 0) { callback(res); }
+                }
             });
             return this;
         } else {
@@ -359,19 +445,36 @@ class BitFinexAPI {
      *         "LTC",
      *         ...
      *       ]
+     *
+     *       or, if this.currency is not set:
+     *
+     *       [
+     *       "BTCUSD",
+     *       "ETHUSD",
+     *       "LTCUSD"
+     *       ...
+     *       ]
      */
     getSymbols(callback) {
         if (callback) {
-            var convert = this.convert.toLowerCase();
+            var currency = this.currency.toLowerCase();
             this._getJSON('/v1/symbols', (symbols) => {
-                var res = [];
-                var symbolPairs = [];
-                symbols.forEach(function(pair) {
-                    if ( pair.endsWith(convert) ) symbolPairs.push(pair.slice(0, pair.indexOf(convert))); // Returns symbol only, removing setup 'options.convert'.
-                });
-                symbolPairs.sort();
-                res = symbolPairs.map(function(pair) { return pair.toUpperCase(); });
-                if (res.length > 0) { callback(res); }
+                if (symbols)    {
+                    var res = [];
+                    var symbolPairs = [];
+                    symbols.forEach(function(pair) {
+                        // Returns symbol only, removing 'options.currency' currency symbol if set.
+                        if (currency != '') {
+                            if ( pair.endsWith(currency) ) 
+                                symbolPairs.push(pair.slice(0, pair.indexOf(currency)));
+                        } else {
+                                symbolPairs.push(pair);
+                        }
+                    });
+                    symbolPairs.sort();
+                    res = symbolPairs.map(function(pair) { return pair.toUpperCase(); });
+                    if (res.length > 0) { callback(res); }
+                }
             });
             return this;
         } else {
@@ -382,20 +485,20 @@ class BitFinexAPI {
 
 
     /*
-     * Function: getTopSymbols(top, callback)
+     * Function: getTopSymbols(limit, callback)
      *
      * Description: Gets a UNSORTED list of top <n> available symbols.
      *
-     * params: top = number
+     * params: limit = number
      *         callback
      *
      * GET: https://api.bitfinex.com/v1/symbols
      *
      * Response: 200 OK
      *       [
-     *         "btc",
-     *         "eth",
-     *         "ltc",
+     *         "btcusd",
+     *         "ethusd",
+     *         "ltcusd",
      *         ...
      *       ]
      *
@@ -404,15 +507,35 @@ class BitFinexAPI {
      *         "message": "Unknown symbol"
      *       }
      *
+     * Returns:
+     *       [
+     *       "BTC",
+     *       "ETH",
+     *       "LTC"
+     *       ...
+     *       ]
+     *
+     *       or, if this.currency is not set:
+     *
+     *       [
+     *       "BTCUSD",
+     *       "ETHUSD",
+     *       "LTCUSD"
+     *       ...
+     *       ]
+     *
      */
     getTopSymbols(limit, callback) {
         if (limit && callback) {
-            var convert = this.convert.toLowerCase();
+            var currency = this.currency.toLowerCase();
             this._getJSON('/v1/symbols', (symbols) => {
                 var res = [];
                 var symbolPairs = [];
                 symbols.forEach(function(pair) {
-                    if ( pair.endsWith(convert) ) symbolPairs.push(pair.slice(0, pair.indexOf(convert))); // Returns symbol only, removing setup 'options.convert'.
+                    // Returns symbol only, removing 'options.currency' currency symbol if set.
+                    if (currency != '')
+                        if ( pair.endsWith(currency) ) 
+                            symbolPairs.push(pair.slice(0, pair.indexOf(currency))); 
                 });
                 res = symbolPairs.map(function(pair) { return pair.toUpperCase(); });
                 if (res.length > 0) {callback(res.slice(0, limit));}
@@ -433,7 +556,7 @@ class BitFinexAPI {
      *             It also includes information such as daily volume and how much the price
      *             has moved over the last day.
      *
-     * Attention: It will use the current set currency in variable 'this.convert'.
+     * Attention: It will use the current set currency in variable 'this.currency'.
      *
      * params: symbol = 'BTC'
      *         callback
@@ -460,7 +583,7 @@ class BitFinexAPI {
      *
      * Returns:
      *      {
-     *         symbol: 'tELFETH',
+     *         symbol: 'ELFETH',
      *         bid: 0.0015233,
      *         bidSize: 115210.00662534,
      *         ask: 0.0015405,
@@ -473,14 +596,29 @@ class BitFinexAPI {
      *         low: 0.001458 
      *      }
      *
+     *       or, if this.currency is not set:
+     *
+     *      {
+     *         symbol: 'ELFETH',
+     *         bid: 0.0015233,
+     *         bidSize: 115210.00662534,
+     *         ...
+     *      }
+     *
      */
     getTicker(symbol, callback) {
         if (symbol && callback) {
-            var symbolPair = symbol.toUpperCase() + this.convert.toUpperCase();
-            this._getJSON('/v2/ticker/t'+symbolPair, (res) => {
-                console.log(res);
-                res.splice(0, 0, symbol.toUpperCase()); // insert symbol at array index [0]
-                if (res) {callback(this._getTickerObject(res));}
+            var symbolPair = (this.currency != '') ? symbol + this.currency : symbol;
+            console.log(symbolPair.toUpperCase());
+            this._getJSON('/v2/ticker/t'+symbolPair.toUpperCase(), (res) => {
+                if (res) {
+                    if (this.currency != '')
+                        res.splice(0, 0, symbol.toUpperCase()); // insert symbol at array index [0]
+                    else
+                        res.splice(0, 0, symbolPair.toUpperCase()); // insert symbolPair at array index [0]
+
+                    callback(this._currencyArrayToObject(res));
+                }
             });
             return this;
         } else {
@@ -499,7 +637,7 @@ class BitFinexAPI {
      *             It also includes information such as daily volume and how much the price
      *             has moved over the last day.
      *
-     * Attention: It will use the current set currency in variable 'this.convert'.
+     * Attention: It will use the current set currency in variable 'this.currency'.
      *
      * params: symbols = 'BTC, ETH, ...'
      *         callback
@@ -548,20 +686,31 @@ class BitFinexAPI {
      *         ...
      *      },{
      *      ...
+     *
+     *       or, if this.currency is not set:
+     *
+     *      {
+     *         symbol: 'ELFETH',
+     *         ...
+     *      }
      */
     getTickers(symbols, callback) {
         if (symbols && callback) {
             var allSymbolPairs = [];
             symbols.split(',').forEach(symbol => {
 
-                var symbolPair = symbol.toUpperCase() + this.convert.toUpperCase();
-                allSymbolPairs.push('t'+symbolPair);
+                var symbolPair = (this.currency != '') ? symbol + this.currency : symbol;
+                allSymbolPairs.push('t'+symbolPair.toUpperCase());
             });
             this._getJSON('/v2/tickers?symbols='+allSymbolPairs.join(','), (res) => {
                 var tickers = [];
                 res.forEach( tickerData => {
-                    tickerData[0] = tickerData[0].replace(/^t/ig, '').substring(0, tickerData[0].length - 4).toUpperCase(); // in: 'tBTCUSD' => out: 'BTC'
-                    tickers.push(this._getTickerObject(tickerData));
+                    if (this.currency != '')
+                        tickerData[0] = tickerData[0].replace(/^t/ig, '').substring(0, tickerData[0].length - 4).toUpperCase(); // in: 'tBTCUSD' => out: 'BTC'
+                    else
+                        tickerData[0] = tickerData[0].replace(/^t/ig, '').toUpperCase(); // in: 'tBTCUSD => out: 'BTCUSD'
+
+                    tickers.push(this._currencyArrayToObject(tickerData));
                 });
                 if (res) { callback(tickers); }
             });
@@ -581,7 +730,7 @@ class BitFinexAPI {
      *             It shows you the current best bid and ask, as well as the last trade price.
      *             It also includes information such as daily volume and how much the price
      *
-     * Attention: It will use the current set currency in variable 'this.convert'.
+     * Attention: It will use the current set currency in variable 'this.currency'.
      *             has moved over the last day.
      *
      * params: callback
@@ -629,6 +778,13 @@ class BitFinexAPI {
      *      },{
      *      ...
      *      } ]
+     *
+     *       or, if this.currency is not set:
+     *
+     *      {
+     *         symbol: 'ELFETH',
+     *         ...
+     *      }
      */
     getAllTickers(callback) {
         if (callback) {
@@ -637,14 +793,18 @@ class BitFinexAPI {
                     var allSymbolPairs = [];
                     symbols.forEach(symbol => {
 
-                        var symbolPair = symbol.toUpperCase() + this.convert.toUpperCase();
-                        allSymbolPairs.push('t'+symbolPair);
+                        var symbolPair = (this.currency != '') ? symbol + this.currency : symbol;
+                        allSymbolPairs.push('t'+symbolPair.toUpperCase());
                     });
                     this._getJSON('/v2/tickers?symbols='+allSymbolPairs.join(','), (res) => {
                         var tickers = [];
                         res.forEach( tickerData => {
-                            tickerData[0] = tickerData[0].replace(/^t/ig, '').toUpperCase(); // in: 'tBTCUSD' => out: 'BTC'
-                            tickers.push(this._getTickerObject(tickerData));
+                            if (this.currency != '')
+                                tickerData[0] = tickerData[0].replace(/^t/ig, '').substring(0, tickerData[0].length - 4).toUpperCase(); // in: 'tBTCUSD' => out: 'BTC'
+                            else
+                                tickerData[0] = tickerData[0].replace(/^t/ig, '').toUpperCase(); // in: 'tBTCUSD' => out: 'BTC'
+
+                            tickers.push(this._currencyArrayToObject(tickerData));
                         });
                         if (res) { callback(tickers); }
                     });
@@ -683,8 +843,8 @@ class BitFinexAPI {
      */
     getSymbolRecentTrades(symbol, callback) {
         if (symbol && callback) {
-            var symbolPair = symbol.toLowerCase() + this.convert.toLowerCase();
-            this._getJSON(`/v1/trades/${symbolPair}`, (res) => {
+            var symbolPair = (this.currency != '') ? symbol + this.currency : symbol;
+            this._getJSON(`/v1/trades/${symbolPair.toLowerCase()}`, (res) => {
                 if (res) { callback(res); }
             });
             return this;
@@ -726,8 +886,8 @@ class BitFinexAPI {
      */
     getSymbolStats(symbol, callback) {
         if (symbol && callback) {
-            var symbolPair = symbol.toLowerCase() + this.convert.toLowerCase();
-            this._getJSON(`/v1/stats/${symbolPair}`, (res) => {
+            var symbolPair = (this.currency != '') ? symbol + this.currency : symbol;
+            this._getJSON(`/v1/stats/${symbolPair.toLowerCase()}`, (res) => {
                 if (res) { callback(res); }
             });
             return this;
@@ -735,7 +895,6 @@ class BitFinexAPI {
             return false;
         }
     }
-
 
 
     /*
@@ -754,14 +913,13 @@ class BitFinexAPI {
      *           { price: '10064', amount: '0.2', timestamp: '1517419047.0' },
      *           ...
      *           { price: '10032', amount: '0.5726', timestamp: '1517419047.0' } ],
-     *          asks: 
-     *           [ { price: '10069', amount: '0.9622', timestamp: '1517419047.0' },
-     *             { price: '10070',
-     *               amount: '4.63761686',
-     *               timestamp: '1517419047.0' },
-     *               ...
-     *             { price: '10103', amount: '3.4', timestamp: '1517419047.0' } ] }
-     *
+     *        asks: 
+     *         [ { price: '10069', amount: '0.9622', timestamp: '1517419047.0' },
+     *           { price: '10070',
+     *             amount: '4.63761686',
+     *             timestamp: '1517419047.0' },
+     *             ...
+     *           { price: '10103', amount: '3.4', timestamp: '1517419047.0' } ] }
      *
      * Response: 400 Bad Request
      *       {
@@ -771,8 +929,8 @@ class BitFinexAPI {
      */
     getSymbolOrderBook(symbol, callback) {
         if (symbol && callback) {
-            var symbolPair = symbol.toLowerCase() + this.convert.toLowerCase();
-            this._getJSON(`/v1/book/${symbolPair}`, (res) => {
+            var symbolPair = (this.currency != '') ? symbol + this.currency : symbol;
+            this._getJSON(`/v1/book/${symbolPair.toLowerCase()}`, (res) => {
                 if (res) { callback(res); }
             });
             return this;
@@ -783,11 +941,11 @@ class BitFinexAPI {
 
 
 
+    /**********/
     /* Events */
+    /**********/
 
-
-
-    on(symbol, callback) {
+    onTickerUpdate(symbol, callback) {
         if (this.events) {
             this.events.push({symbol, callback, type: 'update'});
         } else {
@@ -795,22 +953,38 @@ class BitFinexAPI {
         }
     }
 
-    onPriceGreater(symbol, price, callback) {
+    onPriceAbove(symbol, price, callback) {
         if (this.events) {
-            this.events.push({symbol, price, callback, type: 'priceGreater'});
+            this.events.push({symbol, price, callback, type: 'priceAbove'});
         } else {
             return false;
         }
     }
 
-    onPriceLesser(symbol, price, callback) {
+    onPriceBelow(symbol, price, callback) {
         if (this.events) {
-            this.events.push({symbol, price, callback, type: 'priceLesser'});
+            this.events.push({symbol, price, callback, type: 'priceBelow'});
         } else {
             return false;
         }
     }
 
+    onVolumeAbove(symbol, volume, callback) {
+        if (this.events) {
+            this.events.push({symbol, volume, callback, type: 'volumeAbove'});
+        } else {
+            return false;
+        }
+    }
+
+    onVolumeBelow(symbol, volume, callback) {
+        if (this.events) {
+            this.events.push({symbol, volume, callback, type: 'volumeBelow'});
+        } else {
+            return false;
+        }
+    }
+/*
     onPricePercentChange(symbol, percent, callback) {
         if (this.events) {
             this.events.push({symbol, percent, callback, type: 'pricePercent'});
@@ -826,6 +1000,14 @@ class BitFinexAPI {
             return false;
         }
     }
+*/
+    onPriceChange24h(symbol, percent, callback) {
+        if (this.events) {
+            this.events.push({symbol, percent, callback, type: 'priceChange24h'});
+        } else {
+            return false;
+        }
+    }
 
     onPricePercentChange24h(symbol, percent, callback) {
         if (this.events) {
@@ -834,7 +1016,7 @@ class BitFinexAPI {
             return false;
         }
     }
-
+/*
     onPricePercentChange7d(symbol, percent, callback) {
         if (this.events) {
             this.events.push({symbol, percent, callback, type: 'pricePercentChange7d'});
@@ -907,7 +1089,7 @@ class BitFinexAPI {
             return false;
         }
     }
-
+*/
     deleteEvent(event) {
         this.events.splice(this.events.indexOf(event), 1);
         return this;

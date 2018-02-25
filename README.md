@@ -5,8 +5,6 @@ It uses both Bitfinex REST API version 1 and version 2 as both versions return d
 
 It supports events to get alerts on several data.
 
-WARNING: Under development. Events are still not working, but everything else is usable.
-
 ## Installation
 
 ```console
@@ -15,49 +13,57 @@ $ npm install bitfinex-api-events
 
 ## Usage Example
 ```js
-var BitFinex = require('bitfinex-api-events');
-var bitfinex = new BitFinex();
-// If you want to check a single symbol, use getTicker() (You need to supply the bitfinex id of the cryptocurrency, not the symbol)
-// If you want to use symbols instead of id, use multi.
+var BitFinex = require('node-bitfinex-rest-api');
+
+var options = {
+	currency: 'USD' // Get symbol in a specific currency. Ominting this, will require you to specify a trading pair (ex: BTCUSD) instead.
+}
+var bitfinex = new BitFinex(options);
+
+// If you want to check a single symbol, use getTicker()
+
 bitfinex.getTicker('btc', symbol => {
-  console.log(symbol.latest_price); // Prints the price in USD of BTC at the moment.
+  console.log(symbol.lastPrice); // Prints the price in USD of BTC at the moment.
 });
+
 // If you want to check multiple symbols, use multi():
-bitfinex.multi(symbols => {
-  console.log(symbols.getTicker('BTC').latest_price); // Prints price of BTC in USD
-  console.log(symbols.getTicker('ETH').latest_price); // Print price of ETH in USD
-  console.log(symbols.getTicker('ETH').price_btc); // Print price of ETH in BTC
-  console.log(symbols.getTop(10)); // Prints information about top 10 cryptocurrencies
+bitfinex.getTickers('btc,eth,ltc', symbols => {
+  console.log(symbols['BTC'].lastPrice); // Prints price of BTC in USD
+  console.log(symbols['ETH'].lastPrice); // Print price of ETH in USD
+  console.log(symbols['ETH'].lastPrice); // Print price of ETH in BTC
 });
 ```
 ## Usage Example with Events
-WARNING: Under development. Events are still not working, but everything else is usable.
 
 ```js
-var BitFinex = require('bitfinex-api-events');
+var BitFinex = require('node-bitfinex-rest-api');
 
 var options = {
 	events: true, // Enable event system
 	refresh: 60, // Refresh time in seconds (Default: 60)
-	convert: 'EUR' // Convert price to different currencies. (Default USD)
+	currency: 'USD' // Get symbol in a specific currency. Ominting this, will require you to specify a trading pair (ex: BTCUSD) instead.
 }
 var bitfinex = new BitFinex(options);
 
 // Trigger this event when BTC price is greater than 4000
-bitfinex.onGreater('BTC', 4000, (symbol) => {
-	console.log('BTC price is greater than 4000 of your defined currency');
+bitfinex.onPriceAbove('BTC', 4000, (symbol) => {
+	console.log('BTC price is above than 4000 of your defined currency');
 });
 
+// Trigger this event when BTC price is less than 50000
+bitfinex.onPriceAbove('BTC', 50000, (symbol) => {
+	console.log('BTC price is below 50000 of your defined currency');
+});
 // Trigger this event when BTC percent change is greater than 20
-bitfinex.onPercentChange24h('BTC', 20, (symbol) => {
+bitfinex.onPricePercentChange24h('BTC', 20, (symbol) => {
 	console.log('BTC has a percent change above 20% in the last 24 hours');
 });
 
 // Trigger this event every 60 seconds with information about BTC
-bitfinex.on('BTC', (symbol) => {
+bitfinex.onTickerUpdate('BTC', (symbol) => {
 	console.log(symbol);
 });
 ```
-For a full list of examples with simple requests, visit: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example1.js
-For a full list of examples with events, visit: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example2.js
+For a full list of examples with simple ticker requests, check: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example1.js
+For a full list of examples with events, check: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example2.js
 
