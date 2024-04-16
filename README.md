@@ -64,6 +64,8 @@ bitfinex.onTickerUpdate('BTC', (symbol) => {
 	console.log(symbol);
 });
 ```
-For a full list of examples with simple ticker requests, check: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example1.js
-For a full list of examples with events, check: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example2.js
+For a full list of examples with simple ticker requests, check: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example1.js  
+  
+For a full list of examples with events, check: https://github.com/hvmonteiro/bitfinex-api-events/blob/master/example2.js  
+
 
